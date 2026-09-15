@@ -20,6 +20,7 @@ import numpy as np
 def vector_length(vector):
     length = np.sqrt(np.sum(np.square(vector)))
     return length
+
 def vector_angle(vector_a, vector_b):
     angle = math.acos(radians((np.sum(vector_a * vector_b))/(vector_length(vector_a) * vector_length(vector_b)))) #using the dot product equation to find angle
     return angle
@@ -28,7 +29,7 @@ def convert_lat_lon_to_servo_angles(lat: float, lon: float, alt: float) -> tuple
     vector_me = np.array([-0.35799432],[-0.56980847],[0.73970155])
     vector_U = np.array([(cos(radians(lat))) * cos(radians(lon))]  ,  [sin(radians(lon)) * cos(radians(lat))]  ,  [sin(radians(lat))]) #U is a vector from origin to the spot of earth underneath the ISS
 
-    vector_U_length = np.sqrt(np.sum(np.square(vector_U))) #check with print if code throws error
+    vector_U_length = vector_length(vector_U) #check with print if code throws error
     unit_vector_U = vector_U / vector_U_length #self explanatory I think
 
     earth_radius = 6,371 #an average (in kilometers)
@@ -81,9 +82,9 @@ length = len(all_times)
 # sees how many entries in the list
 print(all_times)
 
-with open('ISS_position.csv', 'w', newline='', encoding='utf-8') as file:
+with open('servo_angles.csv', 'w', newline='', encoding='utf-8') as file:
     writer = csv.writer(file)
-    header = ["timestamp","latitude","longitude","altitude"]
+    header = ["timestamp","pan","tilt"]
     writer.writerow(header)
 
     for t in all_times:
@@ -91,7 +92,8 @@ with open('ISS_position.csv', 'w', newline='', encoding='utf-8') as file:
         with urllib.request.urlopen(f"https://api.wheretheiss.at/v1/satellites/25544/positions?timestamps={t}&units=kilometers") as url:
             data = json.load(url)
             data = data[0]
-            csv_entry = [data["timestamp"],data["latitude"],data["longitude"],data["altitude"]]
+            pan, tilt = convert_lat_lon_to_servo_angles(data["latitude"], data["longitude"], data["altitude"])
+            csv_entry = [data["timestamp"], pan, tilt]
             print(data["timestamp"],data["latitude"],data["longitude"],data["altitude"]) #just as test
         writer.writerow(csv_entry)
         time.sleep(0.01) #respecting request limit on wheretheissat with buffer :)
